@@ -7,17 +7,21 @@ class Messenger:
 
     def __init__(self):
         self.buffer = []
-        self.error_str = '' 
-        self.error_cnt = 0
-        self.message_count = 0
+        self.err_str = '' 
+        self.err_cnt = 0
+        self.msg_cnt = 0
 
     @property
     def error(self):
-        return bool(self.error_str)
+        return bool(self.err_str)
 
     @property
     def error_message(self):
-        return self.error_str
+        return self.err_str
+
+    @property
+    def message_count(self):
+        return self.msg_cnt
 
     def update(self):
         msg = False
@@ -26,19 +30,19 @@ class Messenger:
             if byte != '\n':
                 self.buffer.append(byte)
             else:
-                message_str = ''.join(self.buffer)
+                msg_str = ''.join(self.buffer)
                 self.buffer = []
                 msg = True
                 break
         msg_dict = {}
-        self.error_str = '' 
+        self.err_str = '' 
         if msg:
             try:
-                msg_dict = json.loads(message_str)
-                self.message_count += 1
+                msg_dict = json.loads(msg_str)
+                self.msg_cnt += 1
             except ValueError as e:
-                self.error_str = str(e)
-                self.error_cnt += 1
+                self.err_str = str(e)
+                self.err_cnt += 1
         return msg_dict
 
     def send(self,msg):

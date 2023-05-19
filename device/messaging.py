@@ -7,7 +7,7 @@ class Messenger:
 
     def __init__(self):
         self.buffer = []
-        self.err_str = '' 
+        self.err_str = ''
         self.err_cnt = 0
         self.msg_cnt = 0
 
@@ -35,7 +35,7 @@ class Messenger:
                 msg = True
                 break
         msg_dict = {}
-        self.err_str = '' 
+        self.err_str = ''
         if msg:
             try:
                 msg_dict = json.loads(msg_str)

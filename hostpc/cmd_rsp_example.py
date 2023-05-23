@@ -26,14 +26,11 @@ class DeviceComm(serial.Serial):
         """
         msg_json = json.dumps(msg_dict) + '\n'
         self.write(msg_json.encode())
-        rsp_json = self.readlines()
-        for line in rsp_json:
-            line.strip()
-        #rsp_json = rsp_json.strip()
-        rsp_dict = []
+        rsp_json = self.readline()
+        rsp_json = rsp_json.strip()
+        rsp_dict = {}
         try:
-            for line in rsp_json:
-                rsp_dict.append(json.loads(line.decode('utf-8')))
+            rsp_dict = json.loads(rsp_json.decode('utf-8'))
         except json.decoder.JSONDecodeError as e:
             print(f'Error decoding json message: {e}')
         return rsp_dict
@@ -55,11 +52,12 @@ if __name__ == '__main__':
     
     pixel_pin = 'board.A0'
     num_pixels = 256
-    bright = 0.5
+    bright = 0.9
     WidthMulti = 4
     NeoPixelWidth = 8
-    BlockRGB = (0,0,0)
-    DarkBlockRGB = (100,100,100)
+    BlockRGB = (100,100,100)
+    BlockRGB = (100,0,100)
+    DarkBlockRGB = (0,0,0)
     func = "white_box"
     timeset = 0.01
     timelimit = 5
@@ -78,6 +76,7 @@ if __name__ == '__main__':
         #print(f'rsp: {rsp["timeset"]}')
         print()
         time.sleep(0.2)
+        count = 1
 
 
 

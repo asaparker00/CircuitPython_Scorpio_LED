@@ -130,19 +130,21 @@ if __name__ == '__main__':
     NeoPixelWidth = 8
     #BlockRGB = (100,100,100)
     BlockRGB = (100,0,100)
+    BlockRGB = (0,100,100)
     DarkBlockRGB = (0,0,0)
-    cmd = "xset"
-    cmd = "white_box"
+    cmd = "iset"
+    #cmd = "white_box"
     i = 8
     
-    timeset = 0.005
+    timeset = 0.01
     timelimit = 5
     BlockWidth = WidthMulti * NeoPixelWidth
 
     while True:
         msg = {'pixel_pin':pixel_pin,'num_pixels':num_pixels, 'bright':bright, 'WidthMulti':WidthMulti, 'NeoPixelWidth':NeoPixelWidth, 'BlockRGB':BlockRGB,'DarkBlockRGB':DarkBlockRGB,'timeset':timeset,"timelimit": timelimit,"i": i, "led_RGB":BlockRGB,'cmd':cmd}
-        rsp = dev.send_and_receive(msg)
+        #rsp = dev.send_and_receive(msg)
         #rsp = dev.set(i,(0,100,100))
+        rsp = dev.send_and_receive(msg)
         print(f'msg: {dev.command_dict()}')
         print(f'rsp: {rsp}')
         print()

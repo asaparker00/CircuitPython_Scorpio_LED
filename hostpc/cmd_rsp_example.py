@@ -6,29 +6,22 @@ class DeviceComm(serial.Serial):
     Implements basic device communications
     """
 
+    def __init__(self, port, baudrate=115200, timeout=0.2, num_throw_away=10):
+        self.num_pixels = 256
+        self.bright = 0.9
+        self.timeset = 0.01
+        self.timelimit = 1
+        self.i = 0
+        self.BlockRGB = (100,0,100)
+        self.cmd_dict = {'num_pixels':self.num_pixels, 'bright':self.bright, 
+                         'timeset':self.timeset, "timelimit": self.timelimit,
+                         "i": self.i, "led_RGB":self.BlockRGB, "box_dict":{"num_pixels": 256, 
+                         "NeoPixelWidth":8, "BlockWidth":4, "BlockRGB":(100,100,100), 
+                         "BackGroundRGB":(0,0,0)},'cmd':None}
 
-    def __init__(self, port):
-
-        pixel_pin = 'board.A0'
-        num_pixels = 256
-        bright = 0.9
-        WidthMulti = 4
-        NeoPixelWidth = 8
-        #BlockRGB = (100,100,100)
-        BlockRGB = (100,0,100)
-        DarkBlockRGB = (0,0,0)
-        cmd = None
-        i = 0
-        timeset = 0.01
-        timelimit = 5
-        BlockWidth = WidthMulti * NeoPixelWidth
-
-
-        port_param = {'port': port, 'baudrate': 115200, 'timeout': 0.2}
-        super().__init__(**port_param)
-        self.num_throw_away = 10
+        super().__init__(port=port, baudrate=baudrate, timeout=timeout)
+        self.num_throw_away = num_throw_away
         self.throw_away_lines()
-        self.cmd_dict = {'pixel_pin':pixel_pin,'num_pixels':num_pixels, 'bright':bright, 'WidthMulti':WidthMulti, 'NeoPixelWidth':NeoPixelWidth, 'BlockRGB':BlockRGB,'DarkBlockRGB':DarkBlockRGB,'timeset':timeset,"timelimit": timelimit,"i": i, "led_RGB":BlockRGB,'cmd':None, 'num_of_leds':num_pixels}
 
     def command_dict(self):
         return self.cmd_dict
@@ -38,8 +31,8 @@ class DeviceComm(serial.Serial):
         Throw away first few lines. Deals with case where user has updated the
         firmware which writes a bunch text to the serial port.
         """
-        for i in range(self.num_throw_away):
-            line = self.readline()
+        for _ in range(self.num_throw_away):
+            self.readline()
 
     def send_and_receive(self, msg_dict):
         """
@@ -47,14 +40,20 @@ class DeviceComm(serial.Serial):
         """
         msg_json = json.dumps(msg_dict) + '\n'
         self.write(msg_json.encode())
-        rsp_json = self.readline()
-        rsp_json = rsp_json.strip()
-        rsp_dict = {}
+        rsp_json = self.readline().strip()
+
         try:
             rsp_dict = json.loads(rsp_json.decode('utf-8'))
         except json.decoder.JSONDecodeError as e:
             print(f'Error decoding json message: {e}')
+            rsp_dict = {}
+        except serial.SerialException as e:
+            print(f'Error in serial communication: {e}')
+            rsp_dict = {}
+        
         return rsp_dict
+
+    #... rest of your methods here...
 
     def set(self, led_number, rgb_value, mode='inclusive'):
         """Set the value of led and location=led_number to the specified rgb_value  
@@ -107,48 +106,80 @@ class DeviceComm(serial.Serial):
         """
         self.cmd_dict['cmd'] ='num'
         rsp = self.send_and_receive(self.cmd_dict)
-        return rsp['num_of_leds']
+        return rsp.get('num_of_leds', None)  # return None if 'num_of_leds' key doesn't exist
+
 # --------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     import time
-    import random
-    from datetime import datetime
-
-
-
-    
 
     port = '/dev/ttyACM0' # Set to match your device
     dev = DeviceComm(port)
-    
-    pixel_pin = 'board.A0'
+    i = 9
+    #BlockRGB = (100,0,100)
+
     num_pixels = 256
     bright = 0.9
     WidthMulti = 4
     NeoPixelWidth = 8
+    BlockWidth = WidthMulti * NeoPixelWidth
     #BlockRGB = (100,100,100)
     BlockRGB = (100,0,100)
-    BlockRGB = (0,100,100)
-    DarkBlockRGB = (0,0,0)
-    cmd = "iset"
-    #cmd = "white_box"
-    i = 8
+    BlockRGB = (0,0,0)
+    BackGroundRGB = (0,100,100)
+    cmd = "off"
+    p = 0
     
-    timeset = 0.01
-    timelimit = 5
+    bd = {"num_pixels": num_pixels, "NeoPixelWidth":NeoPixelWidth, "BlockWidth":BlockWidth, "BlockRGB":BlockRGB, "BackGroundRGB":BackGroundRGB}
+
+    timeset = 0.0001
+    timelimit = 0.0001
     BlockWidth = WidthMulti * NeoPixelWidth
 
+    #msg = {'pixel_pin':pixel_pin,'num_pixels':num_pixels, 'bright':bright, 'WidthMulti':WidthMulti, 'NeoPixelWidth':NeoPixelWidth, 'BlockRGB':BlockRGB,'DarkBlockRGB':DarkBlockRGB,'timeset':timeset,"timelimit": timelimit,"i": i, "led_RGB":BlockRGB,'cmd':cmd}
+
     while True:
-        msg = {'pixel_pin':pixel_pin,'num_pixels':num_pixels, 'bright':bright, 'WidthMulti':WidthMulti, 'NeoPixelWidth':NeoPixelWidth, 'BlockRGB':BlockRGB,'DarkBlockRGB':DarkBlockRGB,'timeset':timeset,"timelimit": timelimit,"i": i, "led_RGB":BlockRGB,'cmd':cmd}
-        #rsp = dev.send_and_receive(msg)
-        #rsp = dev.set(i,(0,100,100))
-        rsp = dev.send_and_receive(msg)
-        print(f'msg: {dev.command_dict()}')
-        print(f'rsp: {rsp}')
-        print()
-        time.sleep(0.2)
+        try:
+            for i in range(0, num_pixels, NeoPixelWidth):
+                # Turn on the LEDs in the current group
+                msg = {'num_pixels': dev.num_pixels, "i": list(range(i, min(i + NeoPixelWidth, num_pixels))), "led_RGB":BlockRGB, 'cmd':"iset"}
+                rsp = dev.send_and_receive(msg)
+                print(f'rspj: {rsp}')
+                print()
+                #time.sleep(timelimit)
+                msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
+                rsp = dev.send_and_receive(msg)
+                print(f'rsp: {rsp}')
+                print()
+                #time.sleep(0.1)  # Delay between lighting up each group
 
+                # Turn off the LEDs in the group that is 'BlockWidth' LEDs before the current group
+                if i >= BlockWidth:
+                    msg = {'num_pixels': dev.num_pixels, "i": list(range(i - BlockWidth, i - BlockWidth + NeoPixelWidth)), "led_RGB":BackGroundRGB, 'cmd':"iset"}
+                    rsp = dev.send_and_receive(msg)
+                    print(f'rspj: {rsp}')
+                    print()
+                    msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
+                    rsp = dev.send_and_receive(msg)
+                    print(f'rsp: {rsp}')
+                    print()
+                    #time.sleep(0.1)  # Delay between turning off each group
+            # Additional loop to turn off the remaining LEDs
+            for i in range(num_pixels - BlockWidth, num_pixels, NeoPixelWidth):
+                msg = {'num_pixels': dev.num_pixels, "i": list(range(i, min(i + NeoPixelWidth, num_pixels))), "led_RGB":BackGroundRGB, 'cmd':"iset"}
+                rsp = dev.send_and_receive(msg)
+                print(f'rspj: {rsp}')
+                print()
+                msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
+                rsp = dev.send_and_receive(msg)
+                print(f'rsp: {rsp}')
+                print()
+                #time.sleep(timelimit)  # Delay between turning off each group
+            time.sleep(timelimit)
 
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            break
 
+    dev.close()  # ensure to close the device communication

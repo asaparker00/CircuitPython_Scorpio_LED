@@ -109,7 +109,7 @@ async def led_func(controls):
             pixels_off(pixels)
             controls.wait = timezone
 
-        elif controls.Swtch == True and cmd == "white_box":
+        elif controls.Swtch == True and cmd == "Box":
             Box(
                 timeset,
                 pixels,
@@ -143,9 +143,14 @@ async def led_func(controls):
         elif controls.Swtch == True and cmd == "num":
             controls.rsp
             controls.wait = timezone
+
+        elif controls.Swtch == True and cmd == "bright":
+            pixels.brightness = bright
         
         elif controls.Swtch == False:
-            pixels_off(pixels)
+            #pixels_off(pixels)
+            pixels.fill((100,100,100))
+            pixels.show()
             controls.wait = timezone
         
 

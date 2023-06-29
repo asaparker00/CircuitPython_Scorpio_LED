@@ -85,6 +85,50 @@ class DeviceComm(serial.Serial):
         self.cmd_dict['led_RGB'] = led_RGB
         return self.send_and_receive(self.cmd_dict)
 
+    def Host_Box(self, num_pixels,NeoPixelWidth,BlockWidth,BlockRGB,BackGroundRGB):
+        for i in range(0, num_pixels, NeoPixelWidth):
+                # Turn on the LEDs in the current group
+                msg = {'num_pixels': num_pixels, "i": list(range(i, min(i + NeoPixelWidth, num_pixels))), "led_RGB":BlockRGB, 'cmd':"iset"}
+                rsp = dev.send_and_receive(msg)
+                print(f'rspbox: {rsp}')
+                print()
+                msg = {'num_pixels': num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
+                rsp = dev.send_and_receive(msg)
+                print(f'rspshow: {rsp}')
+                print()
+                #time.sleep(0.1)  # Delay between lighting up each group
+
+                # Turn off the LEDs in the group that is 'BlockWidth' LEDs before the current group
+                if i >= BlockWidth:
+                    msg = {'num_pixels': num_pixels, "i": list(range(i - BlockWidth, i - BlockWidth + NeoPixelWidth)), "led_RGB":BackGroundRGB, 'cmd':"iset"}
+                    rsp = dev.send_and_receive(msg)
+                    print(f'rspdelete: {rsp}')
+                    print()
+                    msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
+                    rsp = dev.send_and_receive(msg)
+                    print(f'rspshow: {rsp}')
+                    print()
+                    #time.sleep(0.1)  # Delay between turning off each group
+            # Additional loop to turn off the remaining LEDs
+        for i in range(num_pixels - BlockWidth, num_pixels, NeoPixelWidth):
+            msg = {'num_pixels': num_pixels, "i": list(range(i, min(i + NeoPixelWidth, num_pixels))), "led_RGB":BackGroundRGB, 'cmd':"iset"}
+            rsp = dev.send_and_receive(msg)
+            print(f'rspdeletelast: {rsp}')
+            print()
+            msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
+            rsp = dev.send_and_receive(msg)
+            print(f'rspshow: {rsp}')
+            print()
+            #time.sleep(timelimit)  # Delay between turning off each group
+        time.sleep(timelimit)
+
+    def Firm_Box(self,num_pixels,NeoPixelWidth,BlockWidth,BlockRGB,BackGroundRGB):
+        bd = {"num_pixels": num_pixels, "NeoPixelWidth":NeoPixelWidth, "BlockWidth":BlockWidth, "BlockRGB":BlockRGB, "BackGroundRGB":BackGroundRGB}
+        msg = {'num_pixels': num_pixels, "i": 0, "box_dict":bd,"led_RGB":BlockRGB, 'cmd':"Box"}
+        rsp = dev.send_and_receive(msg)
+        print(f'rspbox: {rsp}')
+        print()
+
     def off(self):
         """Turns all leds off
 
@@ -107,6 +151,12 @@ class DeviceComm(serial.Serial):
         self.cmd_dict['cmd'] ='num'
         rsp = self.send_and_receive(self.cmd_dict)
         return rsp.get('num_of_leds', None)  # return None if 'num_of_leds' key doesn't exist
+    
+    def brightness(self,bright):
+        msg = {'num_pixels': num_pixels, "bright": bright,"i": 0, "led_RGB":BlockRGB, 'cmd':"bright"}
+        rsp = dev.send_and_receive(msg)
+        print(f'rspbright: {rsp}')
+        print()
 
 # --------------------------------------------------------------------------------------
 
@@ -120,18 +170,16 @@ if __name__ == '__main__':
     #BlockRGB = (100,0,100)
 
     num_pixels = 256
-    bright = 0.9
+    bright = 0.1
     WidthMulti = 4
     NeoPixelWidth = 8
-    BlockWidth = WidthMulti * NeoPixelWidth
-    #BlockRGB = (100,100,100)
     BlockRGB = (100,0,100)
     BlockRGB = (0,0,0)
-    BackGroundRGB = (0,100,100)
+    BackGroundRGB = (100,100,100)
     cmd = "off"
     p = 0
     
-    bd = {"num_pixels": num_pixels, "NeoPixelWidth":NeoPixelWidth, "BlockWidth":BlockWidth, "BlockRGB":BlockRGB, "BackGroundRGB":BackGroundRGB}
+    #bd = {"num_pixels": num_pixels, "NeoPixelWidth":NeoPixelWidth, "BlockWidth":BlockWidth, "BlockRGB":BlockRGB, "BackGroundRGB":BackGroundRGB}
 
     timeset = 0.0001
     timelimit = 0.0001
@@ -141,42 +189,9 @@ if __name__ == '__main__':
 
     while True:
         try:
-            for i in range(0, num_pixels, NeoPixelWidth):
-                # Turn on the LEDs in the current group
-                msg = {'num_pixels': dev.num_pixels, "i": list(range(i, min(i + NeoPixelWidth, num_pixels))), "led_RGB":BlockRGB, 'cmd':"iset"}
-                rsp = dev.send_and_receive(msg)
-                print(f'rspj: {rsp}')
-                print()
-                #time.sleep(timelimit)
-                msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
-                rsp = dev.send_and_receive(msg)
-                print(f'rsp: {rsp}')
-                print()
-                #time.sleep(0.1)  # Delay between lighting up each group
-
-                # Turn off the LEDs in the group that is 'BlockWidth' LEDs before the current group
-                if i >= BlockWidth:
-                    msg = {'num_pixels': dev.num_pixels, "i": list(range(i - BlockWidth, i - BlockWidth + NeoPixelWidth)), "led_RGB":BackGroundRGB, 'cmd':"iset"}
-                    rsp = dev.send_and_receive(msg)
-                    print(f'rspj: {rsp}')
-                    print()
-                    msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
-                    rsp = dev.send_and_receive(msg)
-                    print(f'rsp: {rsp}')
-                    print()
-                    #time.sleep(0.1)  # Delay between turning off each group
-            # Additional loop to turn off the remaining LEDs
-            for i in range(num_pixels - BlockWidth, num_pixels, NeoPixelWidth):
-                msg = {'num_pixels': dev.num_pixels, "i": list(range(i, min(i + NeoPixelWidth, num_pixels))), "led_RGB":BackGroundRGB, 'cmd':"iset"}
-                rsp = dev.send_and_receive(msg)
-                print(f'rspj: {rsp}')
-                print()
-                msg = {'num_pixels': dev.num_pixels, "i": i, "led_RGB":BlockRGB, 'cmd':"show"}
-                rsp = dev.send_and_receive(msg)
-                print(f'rsp: {rsp}')
-                print()
-                #time.sleep(timelimit)  # Delay between turning off each group
-            time.sleep(timelimit)
+            #dev.Host_Box(num_pixels,NeoPixelWidth,BlockRGB,BackGroundRGB)
+            dev.brightness(bright)
+            dev.Firm_Box(num_pixels,NeoPixelWidth,BlockWidth,BlockRGB,BackGroundRGB)
 
         except Exception as e:
             print(f"An error occurred: {e}")

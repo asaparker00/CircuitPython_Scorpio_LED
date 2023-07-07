@@ -1,0 +1,10 @@
+Header header
+int16 led_number
+int16 num_pixels
+int16 neopixelwidth 
+uint8 red
+uint8 green
+uint8 blue
+bool success
+string message
+
